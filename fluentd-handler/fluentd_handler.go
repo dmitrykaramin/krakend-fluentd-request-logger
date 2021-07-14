@@ -12,8 +12,8 @@ const Namespace = "github_com/dmitrykaramin/krakend-fluentd-request-logger"
 
 func EmptyFunc(_ *gin.Context) {}
 
-func ReadConfig(fluentLoggerConfig *FluentLoggerConfig, extraConfig config.ExtraConfig) error {
-	appConfig, ok := extraConfig[Namespace]
+func ReadConfig(cfg *FluentLoggerConfig, extra config.ExtraConfig) error {
+	appConfig, ok := extra[Namespace]
 
 	if !ok {
 		return errors.New("no app config found")
@@ -24,8 +24,8 @@ func ReadConfig(fluentLoggerConfig *FluentLoggerConfig, extraConfig config.Extra
 		return errors.New("can't convert config to right type")
 	}
 
-	fluentLoggerConfig.SetFluentConfig(appConfigMap)
-	fluentLoggerConfig.SetSkipConfig(appConfigMap)
+	cfg.SetFluentConfig(appConfigMap)
+	cfg.SetSkipConfig(appConfigMap)
 
 	return nil
 }
@@ -49,38 +49,38 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		}
 	}
 
+	fluentLogger, err := fluent.New(fluentLoggerConfig.FluentConfig)
+	if err != nil {
+		logger.Error(err)
+		return EmptyFunc
+	}
+
 	return func(c *gin.Context) {
 		logWriter, err := NewLogWriter(c)
 		if err != nil {
 			logger.Error(err)
 		}
 
-		fluentLogger, err := fluent.New(fluentLoggerConfig.FluentConfig)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-
 		path := c.Request.URL.Path
 
 		c.Next()
 
-		if _, ok := skip[path]; !ok {
+		if _, ok := skip[path]; ok {
+			return
+		}
 
-			logWriter.CompleteLogData(c)
+		logWriter.CompleteLogData(c)
+		data := logWriter.MakeLogData()
 
-			data := logWriter.MakeLogData()
+		err = fluentLogger.Post(fluentLoggerConfig.FluentTag, data)
+		if err != nil {
+			logger.Critical(err)
+		}
 
-			err = fluentLogger.Post(fluentLoggerConfig.FluentTag, data)
-			if err != nil {
-				logger.Critical(err)
-			}
-
-			err := fluentLogger.Close()
-			if err != nil {
-				logger.Error(err)
-				return
-			}
+		err = fluentLogger.Close()
+		if err != nil {
+			logger.Error(err)
+			return
 		}
 	}
 }
