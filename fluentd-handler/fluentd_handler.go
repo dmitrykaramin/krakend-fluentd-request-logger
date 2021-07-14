@@ -75,6 +75,12 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 			if err != nil {
 				logger.Critical(err)
 			}
+
+			err := fluentLogger.Close()
+			if err != nil {
+				logger.Error(err)
+				return
+			}
 		}
 	}
 }
