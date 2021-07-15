@@ -74,6 +74,13 @@ func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gi
 replace with
 
 ```go
+import (
+	...
+    "github.com/dmitrykaramin/krakend-fluentd-request-logger"
+	...
+)
+
+
 func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gin.Engine {
     if !cfg.Debug {
         gin.SetMode(gin.ReleaseMode)
