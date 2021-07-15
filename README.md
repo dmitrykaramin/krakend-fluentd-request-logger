@@ -48,7 +48,7 @@ absent fields will be filled out with default values:
 
 `string` with `""`
 
-`book` with `false`
+`bool` with `false`
 
 `int` with `0`
 
