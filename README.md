@@ -1,10 +1,63 @@
 # krakend-fluentd-request-logger
 Sends request logs to fluentd
 
+
+
 #  Usage 
 
+####in kraken.json
 
-in router_engine.go of krakend-ce add FluentLoggerWithConfig middleware
+```json
+{
+  "version": 2,
+  "extra_config": {
+    "github_com/dmitrykaramin/krakend-fluentd-request-logger": {
+      "fluent_config": {
+        ...
+      },
+      "skip": [
+        "/path_to_skip"
+      ]
+    }
+  },
+  ...
+}
+
+```
+## fluent_config
+this json field accept following fluentd config fields:
+
+`"fluent_port"`
+`"fluent_host"`
+`"fluent_network"`
+`"fluent_socket_path"`
+`"timeout"`
+`"write_timeout"`
+`"buffer_limit"`
+`"retry_wait"`
+`"max_retry"`
+`"max_retry_wait"`
+`"tag_prefix"`
+`"async"`
+`"force_stop_async_send"`
+`"sub_second_precision"`
+`"request_ack"`
+
+absent fields will be filled out with default values:
+
+`string` with `""`
+
+`book` with `false` 
+
+`int` with `0`
+
+## skip
+
+is an array of strings: paths to skip from logging
+
+---
+
+####in router_engine.go of krakend-ce add FluentLoggerWithConfig middleware
 
 ```go
 func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gin.Engine {
