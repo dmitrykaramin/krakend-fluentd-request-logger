@@ -2,8 +2,10 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/luraproject/lura/config"
 	"github.com/luraproject/lura/logging"
 )
@@ -41,7 +43,7 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 
 	err := ReadConfig(&conf, cfg)
 	if err != nil {
-		logger.Error("krakend-fluentd-request-logger: %v \n", err.Error())
+		logger.Error("krakend-fluentd-request-logger: ", err.Error())
 		return EmptyFunc
 	}
 
@@ -66,7 +68,7 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		if err != nil {
 			logger.Error(err)
 		}
-
+		c.Request.Header.Set("X-Request-id", fmt.Sprint(uuid.New()))
 		path := c.Request.URL.Path
 
 		c.Next()
