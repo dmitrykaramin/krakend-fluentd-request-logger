@@ -1,4 +1,4 @@
-package fluentd_krakend_handler
+package handler
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ const Namespace = "github_com/dmitrykaramin/krakend-fluentd-request-logger"
 
 func EmptyFunc(_ *gin.Context) {}
 
-func ReadConfig(cfg *FluentLoggerConfig, extra config.ExtraConfig) error {
+func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 	appConfig, ok := extra[Namespace]
 
 	if !ok {
@@ -24,16 +24,22 @@ func ReadConfig(cfg *FluentLoggerConfig, extra config.ExtraConfig) error {
 		return errors.New("can't convert config to right type")
 	}
 
-	cfg.SetFluentConfig(appConfigMap)
-	cfg.SetSkipConfig(appConfigMap)
+	err := conf.SetFluentConfig(appConfigMap)
+	if err != nil {
+		printOutError("fluentd config", err, "set %s error: %v")
+	}
+	err = conf.SetSkipConfig(appConfigMap)
+	if err != nil {
+		printOutError("fluentd 'skip' paths", err, "set %s error: %v")
+	}
 
 	return nil
 }
 
 func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.HandlerFunc {
-	fluentLoggerConfig := FluentLoggerConfig{logger: logger}
+	conf := FluentLoggerConfig{logger: logger}
 
-	err := ReadConfig(&fluentLoggerConfig, cfg)
+	err := ReadConfig(&conf, cfg)
 	if err != nil {
 		logger.Error("krakend-fluentd-request-logger: %v \n", err.Error())
 		return EmptyFunc
@@ -41,15 +47,15 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 
 	var skip map[string]struct{}
 
-	if length := len(fluentLoggerConfig.Skip); length > 0 {
+	if length := len(conf.Skip); length > 0 {
 		skip = make(map[string]struct{}, length)
 
-		for _, path := range fluentLoggerConfig.Skip {
+		for _, path := range conf.Skip {
 			skip[path] = struct{}{}
 		}
 	}
 
-	fluentLogger, err := fluent.New(fluentLoggerConfig.FluentConfig)
+	fluentLogger, err := fluent.New(conf.FluentConfig)
 	if err != nil {
 		logger.Error(err)
 		return EmptyFunc
@@ -72,7 +78,7 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		logWriter.CompleteLogData(c)
 		data := logWriter.MakeLogData()
 
-		err = fluentLogger.Post(fluentLoggerConfig.FluentTag, data)
+		err = fluentLogger.Post(conf.FluentTag, data)
 		if err != nil {
 			logger.Critical(err)
 		}

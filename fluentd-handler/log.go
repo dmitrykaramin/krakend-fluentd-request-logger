@@ -1,4 +1,4 @@
-package fluentd_krakend_handler
+package handler
 
 import (
 	"bytes"
@@ -13,9 +13,7 @@ import (
 
 type LogData struct {
 	start              time.Time
-	finish             string
 	path               string
-	latency            string
 	clientIp           string
 	host               string
 	requestMethod      string
@@ -48,10 +46,10 @@ func (lw *LogWriter) MakeLogData() map[string]string {
 		"client_ip":            data.clientIp,
 		"host":                 data.host,
 		"request.method":       data.requestMethod,
-		"request.headers":      MakeHeaders(data.requestHeaders),
+		"request.headers":      makeHeaders(data.requestHeaders),
 		"request.body":         string(data.requestBody),
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
-		"response.headers":     MakeHeaders(data.requestHeaders),
+		"response.headers":     makeHeaders(data.requestHeaders),
 		"response.body":        fmt.Sprintf("%v", data.responseBody.String()),
 	}
 }
@@ -97,7 +95,7 @@ func (lw *LogWriter) CompleteLogData(c *gin.Context) {
 	lw.logData.responseStatusCode = c.Writer.Status()
 }
 
-func MakeHeaders(header http.Header) string {
+func makeHeaders(header http.Header) string {
 	headers := make(map[string]string)
 	for k, vs := range header {
 		headers[k] = strings.Join(vs, ", ")
