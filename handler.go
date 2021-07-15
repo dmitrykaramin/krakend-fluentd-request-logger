@@ -1,4 +1,4 @@
-package handler
+package fluentd_handler
 
 import (
 	"errors"
