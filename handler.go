@@ -26,11 +26,11 @@ func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 
 	err := conf.SetFluentConfig(appConfigMap)
 	if err != nil {
-		printOutError("fluentd config", err, "set %s error: %v")
+		printOutError("fluentd config", err, "set %s error: %v \n")
 	}
 	err = conf.SetSkipConfig(appConfigMap)
 	if err != nil {
-		printOutError("fluentd 'skip' paths", err, "set %s error: %v")
+		printOutError("fluentd 'skip' paths", err, "set %s error: %v \n")
 	}
 
 	return nil

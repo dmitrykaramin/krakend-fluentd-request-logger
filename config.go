@@ -17,7 +17,7 @@ type FluentLoggerConfig struct {
 }
 
 func printOutConfigError(key string, err error) {
-	message := "used default value for '%s' fluentd config error: %v"
+	message := "used default value for '%s' fluentd config error: %v \n"
 	printOutError(key, err, message)
 }
 
