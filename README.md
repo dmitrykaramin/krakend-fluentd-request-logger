@@ -1,11 +1,10 @@
 # krakend-fluentd-request-logger
+
 Sends request logs to fluentd
 
+# Usage
 
-
-#  Usage 
-
-####in kraken.json
+#### in kraken.json
 
 ```json
 {
@@ -24,7 +23,9 @@ Sends request logs to fluentd
 }
 
 ```
+
 ## fluent_config
+
 this json field accept following fluentd config fields:
 
 `"fluent_port"`
@@ -47,7 +48,7 @@ absent fields will be filled out with default values:
 
 `string` with `""`
 
-`book` with `false` 
+`book` with `false`
 
 `int` with `0`
 
@@ -57,16 +58,16 @@ is an array of strings: paths to skip from logging
 
 ---
 
-####in router_engine.go of krakend-ce add FluentLoggerWithConfig middleware
+#### in router_engine.go of krakend-ce add FluentLoggerWithConfig middleware
 
 ```go
 func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gin.Engine {
     if !cfg.Debug {
-    gin.SetMode(gin.ReleaseMode)
+        gin.SetMode(gin.ReleaseMode)
     }
 
     engine := gin.New()
-
+    
     engine.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: w}), gin.Recovery())
 ```
 
@@ -74,14 +75,14 @@ replace with
 
 ```go
 func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gin.Engine {
-	if !cfg.Debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	engine := gin.New()
-	engine.Use(
-			fluentd.FluentLoggerWithConfig(logger, cfg.ExtraConfig),
-			gin.LoggerWithConfig(gin.LoggerConfig{Output: w}),
-			gin.Recovery(),
-		)
+    if !cfg.Debug {
+        gin.SetMode(gin.ReleaseMode)
+    }
+    
+    engine := gin.New()
+    engine.Use(
+        handler.FluentLoggerWithConfig(logger, cfg.ExtraConfig),
+        gin.LoggerWithConfig(gin.LoggerConfig{Output: w}),
+        gin.Recovery()
+    )
 ```
