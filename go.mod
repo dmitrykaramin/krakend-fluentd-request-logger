@@ -1,4 +1,4 @@
-module github.com/dmitrykaramin/krakend-fluentd-request-logger
+module github.com/DmitryKaramin/krakend-fluentd-request-logger
 
 go 1.16
 
