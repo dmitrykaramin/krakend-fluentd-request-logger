@@ -163,12 +163,12 @@ func (f *FluentLoggerConfig) SetFluentConfig(cfg map[string]interface{}) error {
 }
 
 func (f *FluentLoggerConfig) SetSkipConfig(cfg map[string]interface{}) error {
-	skip, ok := cfg["skip"]
+	skip, ok := cfg["skip_paths"]
 	var emptySlice []string
 
 	if !ok {
 		f.Skip = emptySlice
-		return errors.New("no skip paths found")
+		return errors.New("no 'skip_paths' key found")
 	}
 
 	var skipSlice []string

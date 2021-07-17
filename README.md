@@ -90,6 +90,6 @@ func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gi
     engine.Use(
         handler.FluentLoggerWithConfig(logger, cfg.ExtraConfig),
         gin.LoggerWithConfig(gin.LoggerConfig{Output: w}),
-        gin.Recovery()
+        gin.Recovery(),
     )
 ```
