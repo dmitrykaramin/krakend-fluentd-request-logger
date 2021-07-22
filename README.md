@@ -14,7 +14,7 @@ Sends request logs to fluentd
       "fluent_config": {
         ...
       },
-      "skip": [
+      "skip_paths": [
         "/path_to_skip"
       ]
     }
