@@ -16,7 +16,10 @@ Sends request logs to fluentd
       },
       "skip_paths": [
         "/path_to_skip"
-      ]
+      ],
+     "include_jwt_claims": [
+       "jwt_claim_field1", "jwt_claim_field2"
+     ]
     }
   },
   ...
@@ -52,9 +55,13 @@ absent fields will be filled out with default values:
 
 `int` with `0`
 
-## skip
+## skip_paths
 
 is an array of strings: paths to skip from logging
+
+## include_jwt_claims
+
+is an array of jwt fields from jwt body to include in logging
 
 ---
 

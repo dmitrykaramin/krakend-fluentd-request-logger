@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"io"
 	"io/ioutil"
@@ -51,6 +52,27 @@ func (lw *LogWriter) MakeLogData() map[string]string {
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
 		"response.headers":     makeHeaders(data.requestHeaders),
 		"response.body":        fmt.Sprintf("%v", data.responseBody.String()),
+	}
+}
+
+func AddJwtData(data map[string]string, claimsToAdd map[string]struct{}, header string) {
+	if header == "" || len(claimsToAdd) <= 0 {
+		return
+	}
+
+	splitHeader := strings.Split(header, " ")
+
+	if len(splitHeader) < 2 {
+		return
+	}
+
+	token, _, err := new(jwt.Parser).ParseUnverified(splitHeader[1], jwt.MapClaims{})
+	if err == nil {
+		for k, v := range token.Claims.(jwt.MapClaims) {
+			if _, ok := claimsToAdd[k]; ok {
+				data[k] = fmt.Sprintf("%v", v)
+			}
+		}
 	}
 }
 
