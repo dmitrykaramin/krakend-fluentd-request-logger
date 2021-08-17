@@ -34,6 +34,10 @@ func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 	if err != nil {
 		printOutError("fluentd 'skip' paths", err, "set %s error: %v \n")
 	}
+	err = conf.SetJWTClaimsConfig(appConfigMap)
+	if err != nil {
+		printOutError("fluentd 'include_jwt_claims' ", err, "set %s error: %v \n")
+	}
 
 	return nil
 }
@@ -45,16 +49,6 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 	if err != nil {
 		logger.Error("krakend-fluentd-request-logger: ", err.Error())
 		return EmptyFunc
-	}
-
-	var skip map[string]struct{}
-
-	if length := len(conf.Skip); length > 0 {
-		skip = make(map[string]struct{}, length)
-
-		for _, path := range conf.Skip {
-			skip[path] = struct{}{}
-		}
 	}
 
 	fluentLogger, err := fluent.New(conf.FluentConfig)
@@ -73,12 +67,13 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 
 		c.Next()
 
-		if _, ok := skip[path]; ok {
+		if _, ok := conf.Skip[path]; ok {
 			return
 		}
 
 		logWriter.CompleteLogData(c)
 		data := logWriter.MakeLogData()
+		AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
 
 		err = fluentLogger.Post(conf.FluentTag, data)
 		if err != nil {

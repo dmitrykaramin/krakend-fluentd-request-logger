@@ -12,8 +12,9 @@ import (
 type FluentLoggerConfig struct {
 	FluentTag    string
 	FluentConfig fluent.Config
-	Skip         []string
+	Skip         map[string]struct{}
 	logger       logging.Logger
+	JWTClaims    map[string]struct{}
 }
 
 func printOutConfigError(key string, err error) {
@@ -164,18 +165,36 @@ func (f *FluentLoggerConfig) SetFluentConfig(cfg map[string]interface{}) error {
 
 func (f *FluentLoggerConfig) SetSkipConfig(cfg map[string]interface{}) error {
 	skip, ok := cfg["skip_paths"]
-	var emptySlice []string
+	skipMap := map[string]struct{}{}
 
 	if !ok {
-		f.Skip = emptySlice
+		f.Skip = skipMap
 		return errors.New("no 'skip_paths' key found")
 	}
-
-	var skipSlice []string
-	for _, param := range skip.([]interface{}) {
-		skipSlice = append(skipSlice, param.(string))
-	}
-	f.Skip = skipSlice
+	sliceToMap(skip.([]interface{}), skipMap)
+	f.Skip = skipMap
 
 	return nil
+}
+
+func (f *FluentLoggerConfig) SetJWTClaimsConfig(cfg map[string]interface{}) error {
+	claims, ok := cfg["include_jwt_claims"]
+	claimsMap := map[string]struct{}{}
+
+	if !ok {
+		f.JWTClaims = claimsMap
+		return errors.New("no 'include_jwt_claims' key found")
+	}
+	sliceToMap(claims.([]interface{}), claimsMap)
+	f.JWTClaims = claimsMap
+
+	return nil
+}
+
+func sliceToMap(skipSlice []interface{}, skipMap map[string]struct{}) {
+	if length := len(skipSlice); length > 0 {
+		for _, path := range skipSlice {
+			skipMap[path.(string)] = struct{}{}
+		}
+	}
 }
