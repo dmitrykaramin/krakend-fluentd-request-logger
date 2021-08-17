@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,9 @@ import (
 	"strings"
 	"time"
 )
+
+const emptyQty = 0
+const minTokenParts = 2
 
 type LogData struct {
 	start              time.Time
@@ -55,25 +59,29 @@ func (lw *LogWriter) MakeLogData() map[string]string {
 	}
 }
 
-func AddJwtData(data map[string]string, claimsToAdd map[string]struct{}, header string) {
-	if header == "" || len(claimsToAdd) <= 0 {
-		return
+func AddJwtData(data map[string]string, claimsToAdd map[string]struct{}, header string) error {
+	if header == "" || len(claimsToAdd) <= emptyQty {
+		return nil
 	}
 
 	splitHeader := strings.Split(header, " ")
 
-	if len(splitHeader) < 2 {
-		return
+	if len(splitHeader) < minTokenParts {
+		return errors.New("wrong authorization header format")
 	}
 
 	token, _, err := new(jwt.Parser).ParseUnverified(splitHeader[1], jwt.MapClaims{})
-	if err == nil {
-		for k, v := range token.Claims.(jwt.MapClaims) {
-			if _, ok := claimsToAdd[k]; ok {
-				data[k] = fmt.Sprintf("%v", v)
-			}
+	if err != nil {
+		return err
+	}
+
+	for k, v := range token.Claims.(jwt.MapClaims) {
+		if _, ok := claimsToAdd[k]; ok {
+			data[k] = fmt.Sprintf("%v", v)
 		}
 	}
+
+	return nil
 }
 
 func NewLogWriter(c *gin.Context) (*LogWriter, error) {
