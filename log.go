@@ -19,7 +19,7 @@ const minTokenParts = 2
 type LogData struct {
 	start              time.Time
 	path               string
-	clientIp           string
+	clientIP           string
 	host               string
 	requestMethod      string
 	requestHeaders     http.Header
@@ -48,7 +48,7 @@ func (lw *LogWriter) MakeLogData() map[string]string {
 		"finish":               fmt.Sprintf("%v", finish),
 		"path":                 data.path,
 		"latency":              fmt.Sprintf("%v", finish.Sub(data.start)),
-		"client_ip":            data.clientIp,
+		"client_ip":            data.clientIP,
 		"host":                 data.host,
 		"request.method":       data.requestMethod,
 		"request.headers":      makeHeaders(data.requestHeaders),
@@ -105,7 +105,7 @@ func NewLogWriter(c *gin.Context) (*LogWriter, error) {
 		logData: LogData{
 			start:          time.Now(),
 			path:           path,
-			clientIp:       c.ClientIP(),
+			clientIP:       c.ClientIP(),
 			host:           c.Request.Host,
 			requestBody:    bodyToRead,
 			requestHeaders: c.Request.Header,
