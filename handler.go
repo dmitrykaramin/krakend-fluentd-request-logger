@@ -73,7 +73,10 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 
 		logWriter.CompleteLogData(c)
 		data := logWriter.MakeLogData()
-		AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
+		err = AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
+		if err != nil {
+			logger.Debug(err)
+		}
 
 		err = fluentLogger.Post(conf.FluentTag, data)
 		if err != nil {

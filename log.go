@@ -39,11 +39,11 @@ func (lw LogWriter) Write(b []byte) (int, error) {
 	return lw.writer.Write(b)
 }
 
-func (lw *LogWriter) MakeLogData() map[string]string {
+func (lw *LogWriter) MakeLogData() map[string]interface{} {
 	data := lw.logData
 	finish := time.Now()
 
-	return map[string]string{
+	return map[string]interface{}{
 		"start":                fmt.Sprintf("%v", data.start),
 		"finish":               fmt.Sprintf("%v", finish),
 		"path":                 data.path,
@@ -59,7 +59,7 @@ func (lw *LogWriter) MakeLogData() map[string]string {
 	}
 }
 
-func AddJwtData(data map[string]string, claimsToAdd map[string]struct{}, header string) error {
+func AddJwtData(data map[string]interface{}, claimsToAdd map[string]struct{}, header string) error {
 	if header == "" || len(claimsToAdd) <= emptyQty {
 		return nil
 	}
@@ -77,7 +77,7 @@ func AddJwtData(data map[string]string, claimsToAdd map[string]struct{}, header 
 
 	for k, v := range token.Claims.(jwt.MapClaims) {
 		if _, ok := claimsToAdd[k]; ok {
-			data[k] = fmt.Sprintf("%v", v)
+			data[k] = v
 		}
 	}
 
