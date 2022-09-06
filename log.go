@@ -7,7 +7,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -39,7 +38,7 @@ func (lw LogWriter) Write(b []byte) (int, error) {
 	return lw.writer.Write(b)
 }
 
-func (lw *LogWriter) MakeLogData() map[string]interface{} {
+func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{} {
 	data := lw.logData
 	finish := time.Now()
 
@@ -55,7 +54,7 @@ func (lw *LogWriter) MakeLogData() map[string]interface{} {
 		"request.body":         string(data.requestBody),
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
 		"response.headers":     makeHeaders(data.requestHeaders),
-		"response.body":        fmt.Sprintf("%v", data.responseBody.String()),
+		"response.body":        ModifyResponseBody(data, conf),
 	}
 }
 
@@ -87,7 +86,7 @@ func AddJwtData(data map[string]interface{}, claimsToAdd map[string]struct{}, he
 func NewLogWriter(c *gin.Context) (*LogWriter, error) {
 	var log bytes.Buffer
 
-	bodyToRead, err := ioutil.ReadAll(c.Request.Body)
+	bodyToRead, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +114,7 @@ func NewLogWriter(c *gin.Context) (*LogWriter, error) {
 	}
 
 	c.Writer = newLogWriter
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyToRead))
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyToRead))
 
 	return newLogWriter, nil
 }
