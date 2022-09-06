@@ -38,6 +38,10 @@ func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 	if err != nil {
 		printOutError("fluentd 'include_jwt_claims' ", err, "set %s error: %v \n")
 	}
+	err = conf.setResponseLoggingOptions(appConfigMap)
+	if err != nil {
+		printOutError("fluentd 'response' ", err, "set %s error: %v \n")
+	}
 
 	return nil
 }
@@ -72,7 +76,7 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		}
 
 		logWriter.CompleteLogData(c)
-		data := logWriter.MakeLogData()
+		data := logWriter.MakeLogData(conf)
 		err = AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
 		if err != nil {
 			logger.Debug(err)

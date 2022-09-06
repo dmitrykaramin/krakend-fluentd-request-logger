@@ -9,12 +9,19 @@ import (
 	"time"
 )
 
+type ResponseLoggerConfig struct {
+	bodyLimit           int
+	allowedContentTypes map[string]struct{}
+}
+
 type FluentLoggerConfig struct {
 	FluentTag    string
 	FluentConfig fluent.Config
 	Skip         map[string]struct{}
 	logger       logging.Logger
 	JWTClaims    map[string]struct{}
+	FlatHeaders  map[string]struct{}
+	Response     ResponseLoggerConfig
 }
 
 func printOutConfigError(key string, err error) {
@@ -189,6 +196,56 @@ func (f *FluentLoggerConfig) SetJWTClaimsConfig(cfg map[string]interface{}) erro
 	f.JWTClaims = claimsMap
 
 	return nil
+}
+
+func (f *FluentLoggerConfig) setResponseLoggingOptions(cfg map[string]interface{}) error {
+	f.Response.bodyLimit = 5000
+	f.Response.allowedContentTypes = map[string]struct{}{
+		"application/json": {},
+		"text/html":        {},
+	}
+
+	responseConfig, ok := cfg["response"]
+	if !ok {
+		return errors.New("no 'response' key found. using default fluent response config")
+	}
+
+	responseConfigMap, ok := responseConfig.(map[string]interface{})
+	if !ok {
+		return errors.New("can't convert response config to right type. using default fluent config")
+	}
+
+	f.setResponseBodyLimit(responseConfigMap)
+	f.setResponseAllowedContentType(responseConfigMap)
+
+	return nil
+}
+
+func (f *FluentLoggerConfig) setResponseBodyLimit(cfg map[string]interface{}) {
+	key := "body_limit"
+
+	_, ok := cfg[key]
+	if !ok {
+		printOutConfigError(key, errors.New(fmt.Sprintf("response %v uses default values", key)))
+		return
+	}
+
+	f.Response.bodyLimit = ConvertToInt(key, cfg)
+}
+
+func (f *FluentLoggerConfig) setResponseAllowedContentType(cfg map[string]interface{}) {
+	key := "allowed_content_types"
+
+	contentTypes, ok := cfg[key]
+	contentTypesMap := map[string]struct{}{}
+
+	if !ok {
+		printOutConfigError(key, errors.New(fmt.Sprintf("response %v uses default values", key)))
+		return
+	}
+
+	sliceToMap(contentTypes.([]interface{}), contentTypesMap)
+	f.Response.allowedContentTypes = contentTypesMap
 }
 
 func sliceToMap(skipSlice []interface{}, skipMap map[string]struct{}) {
