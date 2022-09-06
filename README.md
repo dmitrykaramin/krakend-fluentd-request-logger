@@ -79,7 +79,7 @@ is an object of logging response options:
 is symbols limit for logging - to prevent too large data logging. Default value - 5000
 
 ### allowed_content_types
-is an array to defile allowed content-type for logging. content-types not in array will not be logged.
+is an array to define allowed content-type for logging. content-types not in array will not be logged.
 Default value - ['application/json', 'html/text']
 
 ---
