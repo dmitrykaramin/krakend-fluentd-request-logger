@@ -4,7 +4,7 @@ Sends request logs to fluentd
 
 # Usage
 
-#### in kraken.json
+#### in krakend.json
 
 ```json
 {
