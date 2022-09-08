@@ -53,7 +53,7 @@ func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{}
 		"request.headers":      makeHeaders(data.requestHeaders),
 		"request.body":         string(data.requestBody),
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
-		"response.headers":     makeHeaders(data.requestHeaders),
+		"response.headers":     makeHeaders(data.responseHeaders),
 		"response.body":        ModifyResponseBody(data, conf),
 	}
 }
