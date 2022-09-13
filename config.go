@@ -292,11 +292,11 @@ func (f *FluentLoggerConfig) setMaskingConfig(cfg interface{}, key string) map[s
 func stringInterfaceToStringString(data map[string]interface{}) map[string][]string {
 	requestMaskMap := map[string][]string{}
 	for k1, v1 := range data {
-		requestMaskSlice := []string{}
+		var maskSlice []string
 		for _, v2 := range v1.([]interface{}) {
-			requestMaskSlice = append(requestMaskSlice, v2.(string))
+			maskSlice = append(maskSlice, v2.(string))
 		}
-		requestMaskMap[k1] = requestMaskSlice
+		requestMaskMap[k1] = maskSlice
 	}
 	return requestMaskMap
 }
