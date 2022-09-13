@@ -265,29 +265,28 @@ func (f *FluentLoggerConfig) setMaskConfig(cfg map[string]interface{}) {
 		return
 	}
 
-	f.setMaskingConfig(maskConfig, "request")
-	f.setMaskingConfig(maskConfig, "response")
+	f.Mask.Request = f.setMaskingConfig(maskConfig, "request")
+	f.Mask.Response = f.setMaskingConfig(maskConfig, "response")
 }
 
-func (f *FluentLoggerConfig) setMaskingConfig(cfg interface{}, key string) {
+func (f *FluentLoggerConfig) setMaskingConfig(cfg interface{}, key string) map[string][]string {
+	result := make(map[string][]string)
 	maskConfigMap := cfg.(map[string]interface{})
-	requestMaskConfig, ok := maskConfigMap[key]
+	config, ok := maskConfigMap[key]
 
 	if !ok {
 		printOutConfigError(
-			fmt.Sprintf("mask.%s", key), errors.New(fmt.Sprintf("No masking request config found")),
+			fmt.Sprintf("mask.%s", key), errors.New(fmt.Sprintf("No masking %s config found", key)),
 		)
-	} else {
-		rm := make(map[string][]string)
-		requestMaskConfigMap := requestMaskConfig.(map[string]interface{})
-
-		for k, v := range stringInterfaceToStringString(requestMaskConfigMap) {
-			name := strings.Join([]string{key, k}, ".")
-			rm[name] = v
-		}
-
-		f.Mask.Request = rm
+		return result
 	}
+	configConfigMap := config.(map[string]interface{})
+	for k, v := range stringInterfaceToStringString(configConfigMap) {
+		name := strings.Join([]string{key, k}, ".")
+		result[name] = v
+	}
+
+	return result
 }
 
 func stringInterfaceToStringString(data map[string]interface{}) map[string][]string {
