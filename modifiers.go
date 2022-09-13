@@ -4,9 +4,7 @@ import (
 	"fmt"
 )
 
-func ModifyResponseBody(data LogData, conf FluentLoggerConfig) string {
-	body := data.responseBody.String()
-	contentType := data.responseHeaders.Get("Content-Type")
+func ModifyResponseBody(body string, contentType string, conf FluentLoggerConfig) string {
 	runes := []rune(body)
 
 	if _, ok := conf.Response.allowedContentTypes[contentType]; ok {

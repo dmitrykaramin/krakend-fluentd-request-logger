@@ -6,8 +6,14 @@ import (
 	"github.com/fluent/fluent-logger-golang/fluent" //nolint:goimports
 	"github.com/luraproject/lura/logging"
 	"strconv"
+	"strings"
 	"time"
 )
+
+type MaskConfig struct {
+	Request  map[string][]string
+	Response map[string][]string
+}
 
 type ResponseLoggerConfig struct {
 	bodyLimit           int
@@ -22,6 +28,7 @@ type FluentLoggerConfig struct {
 	JWTClaims    map[string]struct{}
 	FlatHeaders  map[string]struct{}
 	Response     ResponseLoggerConfig
+	Mask         MaskConfig
 }
 
 func printOutConfigError(key string, err error) {
@@ -246,6 +253,52 @@ func (f *FluentLoggerConfig) setResponseAllowedContentType(cfg map[string]interf
 
 	sliceToMap(contentTypes.([]interface{}), contentTypesMap)
 	f.Response.allowedContentTypes = contentTypesMap
+}
+
+func (f *FluentLoggerConfig) setMaskConfig(cfg map[string]interface{}) {
+	key := "mask"
+
+	maskConfig, ok := cfg[key]
+
+	if !ok {
+		printOutConfigError(key, errors.New(fmt.Sprintf("No masking config found")))
+		return
+	}
+
+	f.Mask.Request = f.setMaskingConfig(maskConfig, "request")
+	f.Mask.Response = f.setMaskingConfig(maskConfig, "response")
+}
+
+func (f *FluentLoggerConfig) setMaskingConfig(cfg interface{}, key string) map[string][]string {
+	result := make(map[string][]string)
+	maskConfigMap := cfg.(map[string]interface{})
+	config, ok := maskConfigMap[key]
+
+	if !ok {
+		printOutConfigError(
+			fmt.Sprintf("mask.%s", key), errors.New(fmt.Sprintf("No masking %s config found", key)),
+		)
+		return result
+	}
+	configConfigMap := config.(map[string]interface{})
+	for k, v := range stringInterfaceToStringString(configConfigMap) {
+		name := strings.Join([]string{key, k}, ".")
+		result[name] = v
+	}
+
+	return result
+}
+
+func stringInterfaceToStringString(data map[string]interface{}) map[string][]string {
+	requestMaskMap := map[string][]string{}
+	for k1, v1 := range data {
+		var maskSlice []string
+		for _, v2 := range v1.([]interface{}) {
+			maskSlice = append(maskSlice, v2.(string))
+		}
+		requestMaskMap[k1] = maskSlice
+	}
+	return requestMaskMap
 }
 
 func sliceToMap(skipSlice []interface{}, skipMap map[string]struct{}) {
