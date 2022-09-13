@@ -43,6 +43,8 @@ func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 		printOutError("fluentd 'response' ", err, "set %s error: %v \n")
 	}
 
+	conf.setMaskConfig(appConfigMap)
+
 	return nil
 }
 
@@ -66,7 +68,7 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		if err != nil {
 			logger.Error(err)
 		}
-		c.Request.Header.Set("X-Request-id", fmt.Sprint(uuid.New()))
+		c.Request.Header.Set("X-Correlation-ID", fmt.Sprint(uuid.New()))
 		path := c.Request.URL.Path
 
 		c.Next()

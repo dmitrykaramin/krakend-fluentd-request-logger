@@ -41,6 +41,11 @@ func (lw LogWriter) Write(b []byte) (int, error) {
 func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{} {
 	data := lw.logData
 	finish := time.Now()
+	contentType := data.responseHeaders.Get("Content-Type")
+	maskedRequestBody := MaskRequestBody(string(data.requestBody), conf.Mask.Request)
+	maskedRequestHeaders := MaskRequestHeaders(makeHeaders(data.requestHeaders), conf.Mask.Request)
+	maskedResponseBody := MaskResponseBody(data.responseBody.String(), conf.Mask.Response)
+	maskedResponseHeader := MaskResponseHeaders(makeHeaders(data.responseHeaders), conf.Mask.Response)
 
 	return map[string]interface{}{
 		"start":                fmt.Sprintf("%v", data.start),
@@ -50,11 +55,11 @@ func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{}
 		"client_ip":            data.clientIP,
 		"host":                 data.host,
 		"request.method":       data.requestMethod,
-		"request.headers":      makeHeaders(data.requestHeaders),
-		"request.body":         string(data.requestBody),
+		"request.headers":      createKeyValuePairs(maskedRequestHeaders),
+		"request.body":         maskedRequestBody,
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
-		"response.headers":     makeHeaders(data.responseHeaders),
-		"response.body":        ModifyResponseBody(data, conf),
+		"response.headers":     createKeyValuePairs(maskedResponseHeader),
+		"response.body":        ModifyResponseBody(maskedResponseBody, contentType, conf),
 	}
 }
 
@@ -124,13 +129,13 @@ func (lw *LogWriter) CompleteLogData(c *gin.Context) {
 	lw.logData.responseStatusCode = c.Writer.Status()
 }
 
-func makeHeaders(header http.Header) string {
+func makeHeaders(header http.Header) map[string]string {
 	headers := make(map[string]string)
 	for k, vs := range header {
 		headers[k] = strings.Join(vs, ", ")
 	}
 
-	return createKeyValuePairs(headers)
+	return headers
 }
 
 func createKeyValuePairs(m map[string]string) string {
