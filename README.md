@@ -27,6 +27,16 @@ Sends request logs to fluentd
           "application/json",
           "text/html"
         ]
+      },
+      "mask": {
+        "request": {
+          "headers": [
+            "Authorization"
+          ]
+        },
+        "response": {
+          "body": ["access_token"]
+        }
       }
     }
   },
@@ -81,6 +91,17 @@ is symbols limit for logging - to prevent too large data logging. Default value 
 ### allowed_content_types
 is an array to define allowed content-type for logging. content-types not in array will not be logged.
 Default value - ['application/json', 'html/text']
+
+## mask
+ability to mask sensitive data
+
+### request/response
+target to mask - can contain "body" or "headers";
+"body" and "headers" can contain one level depth keys in body or header key to be masked
+
+mask principle - if key's value contains more than 11 symbols they will be cut "first 4 ... last 4" 
+if less than 11 symbols, value will be transformed in star "*" symbols
+
 
 ---
 
