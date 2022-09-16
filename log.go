@@ -56,7 +56,7 @@ func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{}
 		"host":                 data.host,
 		"request.method":       data.requestMethod,
 		"request.headers":      createKeyValuePairs(maskedRequestHeaders),
-		"request.body":         maskedRequestBody,
+		"request.body":         ModifyRequestBody(maskedRequestBody, contentType, conf),
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
 		"response.headers":     createKeyValuePairs(maskedResponseHeader),
 		"response.body":        ModifyResponseBody(maskedResponseBody, contentType, conf),

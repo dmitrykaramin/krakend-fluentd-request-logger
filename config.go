@@ -15,7 +15,7 @@ type MaskConfig struct {
 	Response map[string][]string
 }
 
-type ResponseLoggerConfig struct {
+type BodyLoggerConfig struct {
 	bodyLimit           int
 	allowedContentTypes map[string]struct{}
 }
@@ -27,7 +27,8 @@ type FluentLoggerConfig struct {
 	logger       logging.Logger
 	JWTClaims    map[string]struct{}
 	FlatHeaders  map[string]struct{}
-	Response     ResponseLoggerConfig
+	Response     BodyLoggerConfig
+	Request      BodyLoggerConfig
 	Mask         MaskConfig
 }
 
@@ -205,54 +206,86 @@ func (f *FluentLoggerConfig) SetJWTClaimsConfig(cfg map[string]interface{}) erro
 	return nil
 }
 
-func (f *FluentLoggerConfig) setResponseLoggingOptions(cfg map[string]interface{}) error {
-	f.Response.bodyLimit = 5000
-	f.Response.allowedContentTypes = map[string]struct{}{
+func (f *FluentLoggerConfig) setBodyLoggingOptions(cfg map[string]interface{}) error {
+	defaultBodyLimit := 5000
+	defaultAllowedContentTypes := map[string]struct{}{
 		"application/json": {},
 		"text/html":        {},
 	}
 
-	responseConfig, ok := cfg["response"]
-	if !ok {
-		return errors.New("no 'response' key found. using default fluent response config")
+	requestBodyLimit, err := getBodyLimit("request", cfg)
+	if err != nil {
+		f.Request.bodyLimit = defaultBodyLimit
+	} else {
+		f.Request.bodyLimit = requestBodyLimit
 	}
 
-	responseConfigMap, ok := responseConfig.(map[string]interface{})
-	if !ok {
-		return errors.New("can't convert response config to right type. using default fluent config")
+	responseBodyLimit, err := getBodyLimit("response", cfg)
+	if err != nil {
+		f.Response.bodyLimit = defaultBodyLimit
+	} else {
+		f.Response.bodyLimit = responseBodyLimit
 	}
 
-	f.setResponseBodyLimit(responseConfigMap)
-	f.setResponseAllowedContentType(responseConfigMap)
+	requestContentTypes, err := getAllowedContentType("request", cfg)
+	if err != nil {
+		f.Request.allowedContentTypes = defaultAllowedContentTypes
+	} else {
+		f.Request.allowedContentTypes = requestContentTypes
+	}
+
+	responseContentTypes, err := getAllowedContentType("response", cfg)
+	if err != nil {
+		f.Response.allowedContentTypes = defaultAllowedContentTypes
+	} else {
+		f.Response.allowedContentTypes = responseContentTypes
+	}
 
 	return nil
 }
 
-func (f *FluentLoggerConfig) setResponseBodyLimit(cfg map[string]interface{}) {
-	key := "body_limit"
-
-	_, ok := cfg[key]
+func getBodyLimit(key string, cfg map[string]interface{}) (int, error) {
+	keyConfig, ok := cfg[key]
 	if !ok {
-		printOutConfigError(key, errors.New(fmt.Sprintf("response %v uses default values", key)))
-		return
+		return 0, errors.New(fmt.Sprintf("no '%s' key found. using default fluent response config", key))
+	}
+	keyConfigMap, ok := keyConfig.(map[string]interface{})
+	if !ok {
+		return 0, errors.New(
+			fmt.Sprintf("can't convert '%s' config to right type. using default fluent config", key),
+		)
 	}
 
-	f.Response.bodyLimit = ConvertToInt(key, cfg)
+	bodyLimitKey := "body_limit"
+	_, ok = keyConfigMap[bodyLimitKey]
+	if !ok {
+		return 0, errors.New(fmt.Sprintf("response %v uses default values", bodyLimitKey))
+	}
+
+	return ConvertToInt(bodyLimitKey, keyConfigMap), nil
 }
 
-func (f *FluentLoggerConfig) setResponseAllowedContentType(cfg map[string]interface{}) {
-	key := "allowed_content_types"
-
-	contentTypes, ok := cfg[key]
-	contentTypesMap := map[string]struct{}{}
-
+func getAllowedContentType(key string, cfg map[string]interface{}) (map[string]struct{}, error) {
+	keyConfig, ok := cfg[key]
 	if !ok {
-		printOutConfigError(key, errors.New(fmt.Sprintf("response %v uses default values", key)))
-		return
+		return nil, errors.New(fmt.Sprintf("no '%s' key found. using default fluent response config", key))
+	}
+	keyConfigMap, ok := keyConfig.(map[string]interface{})
+	if !ok {
+		return nil, errors.New(
+			fmt.Sprintf("can't convert '%s' config to right type. using default fluent config", key),
+		)
 	}
 
+	contentTypesKey := "allowed_content_types"
+	contentTypes, ok := keyConfigMap[contentTypesKey]
+	contentTypesMap := map[string]struct{}{}
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("response %v uses default values", contentTypesKey))
+	}
 	sliceToMap(contentTypes.([]interface{}), contentTypesMap)
-	f.Response.allowedContentTypes = contentTypesMap
+
+	return contentTypesMap, nil
 }
 
 func (f *FluentLoggerConfig) setMaskConfig(cfg map[string]interface{}) {
