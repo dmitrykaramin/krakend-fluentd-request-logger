@@ -28,6 +28,13 @@ Sends request logs to fluentd
           "text/html"
         ]
       },
+      "request": {
+        "body_limit": 5,
+        "allowed_content_types": [
+          "application/json",
+          "text/html"
+        ]
+      },
       "mask": {
         "request": {
           "headers": [
@@ -81,7 +88,7 @@ is an array of strings: paths to skip from logging
 
 is an array of jwt fields from jwt body to include in logging
 
-## response
+## request/response
 
 is an object of logging response options:
 
