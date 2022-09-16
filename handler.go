@@ -38,7 +38,7 @@ func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 	if err != nil {
 		printOutError("fluentd 'include_jwt_claims' ", err, "set %s error: %v \n")
 	}
-	err = conf.setResponseLoggingOptions(appConfigMap)
+	err = conf.setBodyLoggingOptions(appConfigMap)
 	if err != nil {
 		printOutError("fluentd 'response' ", err, "set %s error: %v \n")
 	}
