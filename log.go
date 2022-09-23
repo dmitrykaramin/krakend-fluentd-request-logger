@@ -41,7 +41,8 @@ func (lw LogWriter) Write(b []byte) (int, error) {
 func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{} {
 	data := lw.logData
 	finish := time.Now()
-	contentType := data.responseHeaders.Get("Content-Type")
+	requestContentType := data.requestHeaders.Get("Content-Type")
+	responseContentType := data.responseHeaders.Get("Content-Type")
 	maskedRequestBody := MaskRequestBody(string(data.requestBody), conf.Mask.Request)
 	maskedRequestHeaders := MaskRequestHeaders(makeHeaders(data.requestHeaders), conf.Mask.Request)
 	maskedResponseBody := MaskResponseBody(data.responseBody.String(), conf.Mask.Response)
@@ -56,10 +57,10 @@ func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{}
 		"host":                 data.host,
 		"request.method":       data.requestMethod,
 		"request.headers":      createKeyValuePairs(maskedRequestHeaders),
-		"request.body":         ModifyRequestBody(maskedRequestBody, contentType, conf),
+		"request.body":         ModifyRequestBody(maskedRequestBody, requestContentType, conf),
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
 		"response.headers":     createKeyValuePairs(maskedResponseHeader),
-		"response.body":        ModifyResponseBody(maskedResponseBody, contentType, conf),
+		"response.body":        ModifyResponseBody(maskedResponseBody, responseContentType, conf),
 	}
 }
 
