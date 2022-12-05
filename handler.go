@@ -6,8 +6,8 @@ import (
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/luraproject/lura/config"
 	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/v2/config"
 )
 
 const Namespace = "github_com/dmitrykaramin/krakend-fluentd-request-logger"
@@ -57,16 +57,17 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		return EmptyFunc
 	}
 
-	fluentLogger, err := fluent.New(conf.FluentConfig)
-	if err != nil {
-		logger.Error(err)
-		return EmptyFunc
-	}
-
 	return func(c *gin.Context) {
+		fluentLogger, err := fluent.New(conf.FluentConfig)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+
 		logWriter, err := NewLogWriter(c)
 		if err != nil {
 			logger.Error(err)
+			return
 		}
 		c.Request.Header.Set("X-Correlation-ID", fmt.Sprint(uuid.New()))
 		path := c.Request.URL.Path
@@ -82,11 +83,13 @@ func FluentLoggerWithConfig(logger logging.Logger, cfg config.ExtraConfig) gin.H
 		err = AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
 		if err != nil {
 			logger.Debug(err)
+			return
 		}
 
 		err = fluentLogger.Post(conf.FluentTag, data)
 		if err != nil {
 			logger.Critical(err)
+			return
 		}
 
 		err = fluentLogger.Close()
