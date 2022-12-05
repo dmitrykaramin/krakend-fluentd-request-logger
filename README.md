@@ -127,6 +127,16 @@ func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gi
     ...
 }
 ```
+or
+
+```go
+func NewEngine(cfg config.ServiceConfig, opt luragin.EngineOptions) *gin.Engine {
+	engine := luragin.NewEngine(cfg, opt)
+
+	engine.NoRoute(opencensus.HandlerFunc(&config.EndpointConfig{Endpoint: "NoRoute"}, defaultHandler, nil))
+	
+	...
+```
 
 replace with
 
@@ -151,4 +161,14 @@ func NewEngine(cfg config.ServiceConfig, logger logging.Logger, w io.Writer) *gi
     )
     ...
 }
+```
+
+or
+
+```go
+func NewEngine(cfg config.ServiceConfig, opt luragin.EngineOptions) *gin.Engine {
+	engine := luragin.NewEngine(cfg, opt)
+	engine.Use(handler.FluentLoggerWithConfig(opt.Logger, cfg.ExtraConfig))
+
+	engine.NoRoute(opencensus.HandlerFunc(&config.EndpointConfig{Endpoint: "NoRoute"}, defaultHandler, nil))
 ```

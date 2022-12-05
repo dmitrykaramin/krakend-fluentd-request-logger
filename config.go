@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fluent/fluent-logger-golang/fluent" //nolint:goimports
-	"github.com/luraproject/lura/logging"
+	"github.com/luraproject/lura/v2/logging"
 	"strconv"
 	"strings"
 	"time"
