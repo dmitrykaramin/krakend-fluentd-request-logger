@@ -38,6 +38,10 @@ func (lw LogWriter) Write(b []byte) (int, error) {
 	return lw.writer.Write(b)
 }
 
+func (lw LogWriter) GetHeaderValue(key string) string {
+	return lw.logData.requestHeaders.Get(key)
+}
+
 func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{} {
 	data := lw.logData
 	finish := time.Now()
