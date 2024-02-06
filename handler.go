@@ -48,7 +48,7 @@ func ReadConfig(conf *FluentLoggerConfig, extra config.ExtraConfig) error {
 	return nil
 }
 
-type AdditionalData func(log LogData, data map[string]interface{}) map[string]interface{}
+type AdditionalData func(log LogWriter, data map[string]interface{}) map[string]interface{}
 
 func FluentLoggerWithConfig(
 	logger logging.Logger, cfg config.ExtraConfig, additionalData AdditionalData,
@@ -84,7 +84,7 @@ func FluentLoggerWithConfig(
 		}
 
 		logWriter.CompleteLogData(c)
-		data := additionalData(logWriter.logData, logWriter.MakeLogData(conf))
+		data := additionalData(*logWriter, logWriter.MakeLogData(conf))
 		err = AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
 		if err != nil {
 			logger.Debug(err)
