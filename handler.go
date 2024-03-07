@@ -61,14 +61,9 @@ func FluentLoggerWithConfig(
 		logger.Error("krakend-fluentd-request-logger: ", err.Error())
 		return EmptyFunc
 	}
+	fluentLogger, _ := fluent.New(conf.FluentConfig)
 
 	return func(c *gin.Context) {
-		fluentLogger, err := fluent.New(conf.FluentConfig)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-
 		logWriter, err := NewLogWriter(c)
 		if err != nil {
 			logger.Error(err)
@@ -94,12 +89,6 @@ func FluentLoggerWithConfig(
 		err = fluentLogger.Post(conf.FluentTag, data)
 		if err != nil {
 			logger.Critical(err)
-			return
-		}
-
-		err = fluentLogger.Close()
-		if err != nil {
-			logger.Error(err)
 			return
 		}
 	}
