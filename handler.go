@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -69,16 +70,23 @@ func FluentLoggerWithConfig(
 			logger.Error(err)
 			return
 		}
-		c.Request.Header.Set("X-Correlation-ID", fmt.Sprint(uuid.New()))
+
 		path := c.Request.URL.Path
-
-		c.Next()
-
+		skip := false
 		if _, ok := conf.Skip[path]; ok {
+			skip = true
+			c.Next()
+		} else {
+			logWriter.SetRequestBody(c, conf)
+			c.Request.Header.Set("X-Correlation-ID", fmt.Sprint(uuid.New()))
+			c.Next()
+		}
+
+		if skip {
 			return
 		}
 
-		logWriter.CompleteLogData(c)
+		logWriter.SetResponseBody(c, conf)
 		data := additionalData(*logWriter, logWriter.MakeLogData(conf))
 		err = AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
 		if err != nil {
