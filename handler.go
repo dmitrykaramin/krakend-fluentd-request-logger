@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -61,29 +62,31 @@ func FluentLoggerWithConfig(
 		logger.Error("krakend-fluentd-request-logger: ", err.Error())
 		return EmptyFunc
 	}
+	fluentLogger, _ := fluent.New(conf.FluentConfig)
 
 	return func(c *gin.Context) {
-		fluentLogger, err := fluent.New(conf.FluentConfig)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-
 		logWriter, err := NewLogWriter(c)
 		if err != nil {
 			logger.Error(err)
 			return
 		}
-		c.Request.Header.Set("X-Correlation-ID", fmt.Sprint(uuid.New()))
+
 		path := c.Request.URL.Path
-
-		c.Next()
-
+		skip := false
 		if _, ok := conf.Skip[path]; ok {
+			skip = true
+			c.Next()
+		} else {
+			logWriter.SetRequestBody(c, conf)
+			c.Request.Header.Set("X-Correlation-ID", fmt.Sprint(uuid.New()))
+			c.Next()
+		}
+
+		if skip {
 			return
 		}
 
-		logWriter.CompleteLogData(c)
+		logWriter.SetResponseBody(c, conf)
 		data := additionalData(*logWriter, logWriter.MakeLogData(conf))
 		err = AddJwtData(data, conf.JWTClaims, c.Request.Header.Get("Authorization"))
 		if err != nil {
@@ -94,12 +97,6 @@ func FluentLoggerWithConfig(
 		err = fluentLogger.Post(conf.FluentTag, data)
 		if err != nil {
 			logger.Critical(err)
-			return
-		}
-
-		err = fluentLogger.Close()
-		if err != nil {
-			logger.Error(err)
 			return
 		}
 	}

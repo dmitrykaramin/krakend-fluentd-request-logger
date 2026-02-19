@@ -46,13 +46,15 @@ func (lw LogWriter) GetHeaderValue(key string) string {
 }
 
 func (lw *LogWriter) SetRequestBody(c *gin.Context, conf FluentLoggerConfig) {
-	lw.logData.requestBody = ModifyRequestBody(c, conf)
+	lw.logData.requestBody = MaskRequestBody(ModifyRequestBody(c, conf), conf.Mask.Request)
 }
 
 func (lw *LogWriter) SetResponseBody(c *gin.Context, conf FluentLoggerConfig) {
 	lw.logData.responseHeaders = c.Writer.Header()
 	lw.logData.responseStatusCode = c.Writer.Status()
-	lw.logData.responseBody = ModifyResponseBody(c, lw.logData.rawResponseBody, conf)
+	lw.logData.responseBody = MaskResponseBody(
+		ModifyResponseBody(c, lw.logData.rawResponseBody, conf), conf.Mask.Response,
+	)
 }
 
 func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{} {
