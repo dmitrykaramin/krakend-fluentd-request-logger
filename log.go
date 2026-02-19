@@ -45,10 +45,6 @@ func (lw LogWriter) GetHeaderValue(key string) string {
 	return lw.logData.requestHeaders.Get(key)
 }
 
-func bytesToString(bytes []byte) string {
-	return string(bytes)
-}
-
 func (lw *LogWriter) SetRequestBody(c *gin.Context, conf FluentLoggerConfig) {
 	lw.logData.requestBody = ModifyRequestBody(c, conf)
 }
@@ -104,10 +100,6 @@ func AddJwtData(data map[string]interface{}, claimsToAdd map[string]struct{}, he
 	}
 
 	return nil
-}
-
-func AddHeader(c *gin.Context, header_key string, header_value string) {
-	c.Request.Header.Set(header_key, header_value)
 }
 
 func NewLogWriter(c *gin.Context) (*LogWriter, error) {
