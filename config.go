@@ -3,11 +3,12 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/fluent/fluent-logger-golang/fluent" //nolint:goimports
-	"github.com/luraproject/lura/v2/logging"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fluent/fluent-logger-golang/fluent" //nolint:goimports
+	"github.com/luraproject/lura/v2/logging"
 )
 
 type MaskConfig struct {
@@ -16,7 +17,7 @@ type MaskConfig struct {
 }
 
 type BodyLoggerConfig struct {
-	bodyLimit           int
+	bodyLimit           int64
 	allowedContentTypes map[string]struct{}
 }
 
@@ -207,7 +208,8 @@ func (f *FluentLoggerConfig) SetJWTClaimsConfig(cfg map[string]interface{}) erro
 }
 
 func (f *FluentLoggerConfig) setBodyLoggingOptions(cfg map[string]interface{}) error {
-	defaultBodyLimit := 5000
+	// 30 Mb
+	defaultBodyLimit := int64(30)
 	defaultAllowedContentTypes := map[string]struct{}{
 		"application/json": {},
 		"text/html":        {},
@@ -217,20 +219,21 @@ func (f *FluentLoggerConfig) setBodyLoggingOptions(cfg map[string]interface{}) e
 	if err != nil {
 		f.Request.bodyLimit = defaultBodyLimit
 	} else {
-		f.Request.bodyLimit = requestBodyLimit
+		f.Request.bodyLimit = int64(requestBodyLimit)
 	}
 
 	responseBodyLimit, err := getBodyLimit("response", cfg)
 	if err != nil {
 		f.Response.bodyLimit = defaultBodyLimit
 	} else {
-		f.Response.bodyLimit = responseBodyLimit
+		f.Response.bodyLimit = int64(responseBodyLimit)
 	}
 
 	requestContentTypes, err := getAllowedContentType("request", cfg)
 	if err != nil {
 		f.Request.allowedContentTypes = defaultAllowedContentTypes
 	} else {
+		delete(requestContentTypes, "multipart/form-data")
 		f.Request.allowedContentTypes = requestContentTypes
 	}
 
@@ -238,6 +241,7 @@ func (f *FluentLoggerConfig) setBodyLoggingOptions(cfg map[string]interface{}) e
 	if err != nil {
 		f.Response.allowedContentTypes = defaultAllowedContentTypes
 	} else {
+		delete(requestContentTypes, "multipart/form-data")
 		f.Response.allowedContentTypes = responseContentTypes
 	}
 
