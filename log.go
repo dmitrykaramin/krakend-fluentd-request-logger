@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
 const emptyQty = 0
@@ -18,14 +19,16 @@ const minTokenParts = 2
 type LogData struct {
 	start              time.Time
 	path               string
+	fulle_path         string
 	clientIP           string
 	host               string
 	requestMethod      string
 	requestHeaders     http.Header
-	requestBody        []byte
+	requestBody        string
 	responseStatusCode int
 	responseHeaders    http.Header
-	responseBody       *bytes.Buffer
+	rawResponseBody    *bytes.Buffer
+	responseBody       string
 }
 
 type LogWriter struct {
@@ -42,14 +45,20 @@ func (lw LogWriter) GetHeaderValue(key string) string {
 	return lw.logData.requestHeaders.Get(key)
 }
 
+func (lw *LogWriter) SetRequestBody(c *gin.Context, conf FluentLoggerConfig) {
+	lw.logData.requestBody = ModifyRequestBody(c, conf)
+}
+
+func (lw *LogWriter) SetResponseBody(c *gin.Context, conf FluentLoggerConfig) {
+	lw.logData.responseHeaders = c.Writer.Header()
+	lw.logData.responseStatusCode = c.Writer.Status()
+	lw.logData.responseBody = ModifyResponseBody(c, lw.logData.rawResponseBody, conf)
+}
+
 func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{} {
 	data := lw.logData
 	finish := time.Now()
-	requestContentType := data.requestHeaders.Get("Content-Type")
-	responseContentType := data.responseHeaders.Get("Content-Type")
-	maskedRequestBody := MaskRequestBody(string(data.requestBody), conf.Mask.Request)
 	maskedRequestHeaders := MaskRequestHeaders(makeHeaders(data.requestHeaders), conf.Mask.Request)
-	maskedResponseBody := MaskResponseBody(data.responseBody.String(), conf.Mask.Response)
 	maskedResponseHeader := MaskResponseHeaders(makeHeaders(data.responseHeaders), conf.Mask.Response)
 
 	return map[string]interface{}{
@@ -61,10 +70,10 @@ func (lw *LogWriter) MakeLogData(conf FluentLoggerConfig) map[string]interface{}
 		"host":                 data.host,
 		"request.method":       data.requestMethod,
 		"request.headers":      createKeyValuePairs(maskedRequestHeaders),
-		"request.body":         ModifyRequestBody(maskedRequestBody, requestContentType, conf),
+		"request.body":         data.requestBody,
 		"response.status_code": fmt.Sprintf("%v", data.responseStatusCode),
 		"response.headers":     createKeyValuePairs(maskedResponseHeader),
-		"response.body":        ModifyResponseBody(maskedResponseBody, responseContentType, conf),
+		"response.body":        data.responseBody,
 	}
 }
 
@@ -96,42 +105,31 @@ func AddJwtData(data map[string]interface{}, claimsToAdd map[string]struct{}, he
 func NewLogWriter(c *gin.Context) (*LogWriter, error) {
 	var log bytes.Buffer
 
-	bodyToRead, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	path := c.Request.URL.Path
+	full_path := ""
 	raw := c.Request.URL.RawQuery
 
 	if raw != "" {
-		path = path + "?" + raw
+		full_path = c.Request.URL.Path + "?" + raw
 	}
 
 	newLogWriter := &LogWriter{
 		ResponseWriter: c.Writer,
 		writer:         io.MultiWriter(c.Writer, &log),
 		logData: LogData{
-			start:          time.Now(),
-			path:           path,
-			clientIP:       c.ClientIP(),
-			host:           c.Request.Host,
-			requestBody:    bodyToRead,
-			requestHeaders: c.Request.Header,
-			requestMethod:  c.Request.Method,
-			responseBody:   &log,
+			start:           time.Now(),
+			path:            c.Request.URL.Path,
+			fulle_path:      full_path,
+			clientIP:        c.ClientIP(),
+			host:            c.Request.Host,
+			requestHeaders:  c.Request.Header,
+			requestMethod:   c.Request.Method,
+			rawResponseBody: &log,
 		},
 	}
 
 	c.Writer = newLogWriter
-	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyToRead))
 
 	return newLogWriter, nil
-}
-
-func (lw *LogWriter) CompleteLogData(c *gin.Context) {
-	lw.logData.responseHeaders = c.Writer.Header()
-	lw.logData.responseStatusCode = c.Writer.Status()
 }
 
 func makeHeaders(header http.Header) map[string]string {
